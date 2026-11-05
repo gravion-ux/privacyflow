@@ -1,0 +1,6 @@
+# Paths are relative to this config file. Never place actual provider credentials in Git.
+profiles = ["profiles/provider-a.conf.example", "profiles/provider-b.conf.example"]
+
+[rotation]
+interval_seconds = 1800
+require_kill_switch = true

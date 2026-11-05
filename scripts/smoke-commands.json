@@ -1,0 +1,30 @@
+[
+  {
+    "label": "privacyflow validate",
+    "cwd": ".",
+    "cmd": [
+      "python",
+      "-m",
+      "privacyflow.cli",
+      "validate",
+      "config.example.toml"
+    ],
+    "env": {
+      "PYTHONPATH": "src"
+    }
+  },
+  {
+    "label": "privacyflow rotation-plan",
+    "cwd": ".",
+    "cmd": [
+      "python",
+      "-m",
+      "privacyflow.cli",
+      "rotation-plan",
+      "config.example.toml"
+    ],
+    "env": {
+      "PYTHONPATH": "src"
+    }
+  }
+]

@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "privacyflow"
+version = "0.1.0"
+description = "Privacyflow: authorized VPN profile validation and safe rotation planning"
+requires-python = ">=3.11"
+license = {text = "MIT"}
+authors = [{name = "Gravion contributors"}]
+dependencies = []
+
+[project.scripts]
+privacyflow = "privacyflow.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
