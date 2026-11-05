@@ -8,6 +8,16 @@ from dataclasses import dataclass
 from pathlib import Path
 from urllib.parse import urlsplit
 
+OPTIONAL_SCALAR_LABELS = {
+    "dns": "DNS",
+    "mtu": "MTU",
+    "table": "Table",
+    "saveconfig": "SaveConfig",
+    "listenport": "ListenPort",
+    "fwmark": "FwMark",
+    "persistentkeepalive": "PersistentKeepalive",
+}
+
 
 @dataclass(frozen=True)
 class PrivacyflowConfig:
@@ -46,9 +56,12 @@ def _validate_endpoint(value: str, filename: str) -> None:
     try:
         parsed = urlsplit(f"//{value}")
         hostname = parsed.hostname
-        port = parsed.port
     except ValueError as exc:
         raise ConfigError(f"{filename} contains an invalid Peer.Endpoint") from exc
+    try:
+        port = parsed.port
+    except ValueError as exc:
+        raise ConfigError(f"{filename} Peer.Endpoint must be a hostname or IP followed by a port") from exc
     if not hostname or port is None or not 1 <= port <= 65535:
         raise ConfigError(f"{filename} Peer.Endpoint must be a hostname or IP followed by a port")
     if parsed.username or parsed.password or parsed.path or parsed.query or parsed.fragment:
@@ -59,11 +72,14 @@ def _validate_endpoint(value: str, filename: str) -> None:
         except ValueError as exc:
             raise ConfigError(f"{filename} contains an invalid IPv6 Peer.Endpoint") from exc
     else:
-        labels = hostname.rstrip(".").split(".")
-        label_pattern = re.compile(r"^[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?$")
-        numeric_dotted = all(label.isdecimal() for label in labels)
-        if numeric_dotted or not labels or any(not label_pattern.fullmatch(label) for label in labels):
-            raise ConfigError(f"{filename} contains an invalid Peer.Endpoint hostname")
+        try:
+            ipaddress.IPv4Address(hostname)
+        except ValueError:
+            labels = hostname.rstrip(".").split(".")
+            label_pattern = re.compile(r"^[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?$")
+            numeric_dotted = all(label.isdecimal() for label in labels)
+            if numeric_dotted or not labels or any(not label_pattern.fullmatch(label) for label in labels):
+                raise ConfigError(f"{filename} contains an invalid Peer.Endpoint hostname")
 
 
 def load_config(path: str | Path) -> PrivacyflowConfig:
@@ -72,7 +88,7 @@ def load_config(path: str | Path) -> PrivacyflowConfig:
         import tomllib
         if config_path.stat().st_size > 1024 * 1024:
             raise ConfigError("TOML config exceeds the 1 MiB safety limit")
-        raw = tomllib.loads(config_path.read_text(encoding="utf-8"))
+        raw = tomllib.loads(config_path.read_text(encoding="utf-8-sig"))
     except ConfigError:
         raise
     except (OSError, UnicodeError, ValueError) as exc:
@@ -111,7 +127,7 @@ def validate_wireguard_profile(path: str | Path) -> None:
     try:
         if profile_path.stat().st_size > 1024 * 1024:
             raise ConfigError(f"{profile_path.name} exceeds the 1 MiB safety limit")
-        content = profile_path.read_text(encoding="utf-8")
+        content = profile_path.read_text(encoding="utf-8-sig")
     except ConfigError:
         raise
     except (OSError, UnicodeError) as exc:
@@ -150,6 +166,8 @@ def validate_wireguard_profile(path: str | Path) -> None:
             raise ConfigError(f"{profile_path.name} uses {key}, an executable wg-quick hook not supported by Privacyflow")
         if normalized_key not in supported:
             raise ConfigError(f"{profile_path.name} contains unsupported {current_name}.{key} on line {line_number}")
+        if normalized_key in OPTIONAL_SCALAR_LABELS and not value:
+            raise ConfigError(f"{profile_path.name} contains an empty {current_name}.{OPTIONAL_SCALAR_LABELS[normalized_key]}")
         current_values[normalized_key] = value
 
     interfaces = [values for name, values in sections if name == "Interface"]

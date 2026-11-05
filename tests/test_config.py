@@ -127,5 +127,42 @@ class PrivacyflowConfigTests(unittest.TestCase):
         with self.assertRaisesRegex(ConfigError, "invalid Interface.DNS"):
             load_config(self.make_config(profile=profile))
 
+    def test_accepts_ipv4_literal_endpoint(self):
+        profile = PROFILE.replace("vpn.example.net:51820", "203.0.113.5:51820")
+        self.assertEqual(len(load_config(self.make_config(profile=profile)).profiles), 1)
+
+    def test_still_rejects_numeric_looking_non_ip_endpoint_hostname(self):
+        profile = PROFILE.replace("vpn.example.net:51820", "1.2.3.4.5:51820")
+        with self.assertRaisesRegex(ConfigError, "Peer.Endpoint"):
+            load_config(self.make_config(profile=profile))
+
+    def test_accepts_profile_with_utf8_bom(self):
+        (self.base / "bom.conf").write_bytes(b"\xef\xbb\xbf" + PROFILE.encode("utf-8"))
+        cfg = self.base / "bom.toml"
+        cfg.write_text('profiles = ["bom.conf"]\n')
+        self.assertEqual(len(load_config(cfg).profiles), 1)
+
+    def test_accepts_toml_config_with_utf8_bom(self):
+        (self.base / "vpn.conf").write_text(PROFILE)
+        cfg = self.base / "bom.toml"
+        cfg.write_bytes(b"\xef\xbb\xbf" + b'profiles = ["vpn.conf"]\n')
+        self.assertEqual(len(load_config(cfg).profiles), 1)
+
+    def test_rejects_empty_optional_interface_scalar_values(self):
+        for key in ("MTU", "DNS", "SaveConfig", "Table", "ListenPort", "FwMark"):
+            profile = PROFILE.replace("Address = 10.0.0.2/32", f"Address = 10.0.0.2/32\n{key} =")
+            with self.assertRaisesRegex(ConfigError, "empty"):
+                load_config(self.make_config(profile=profile))
+
+    def test_rejects_empty_optional_peer_scalar_values(self):
+        profile = PROFILE.replace("AllowedIPs = 0.0.0.0/0, ::/0", "AllowedIPs = 0.0.0.0/0, ::/0\nPersistentKeepalive =")
+        with self.assertRaisesRegex(ConfigError, "empty Peer.PersistentKeepalive"):
+            load_config(self.make_config(profile=profile))
+
+    def test_reports_out_of_range_port_with_the_port_message(self):
+        profile = PROFILE.replace("vpn.example.net:51820", "vpn.example.net:65536")
+        with self.assertRaisesRegex(ConfigError, "followed by a port"):
+            load_config(self.make_config(profile=profile))
+
 
 if __name__ == "__main__": unittest.main()
