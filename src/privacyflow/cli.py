@@ -4,13 +4,13 @@ import json
 import sys
 from .config import ConfigError, load_config, rotation_plan
 
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="privacyflow", description="Privacyflow profile validation and safe rotation planning")
     sub = parser.add_subparsers(dest="command", required=True)
     for name in ("validate", "rotation-plan"):
         cmd = sub.add_parser(name)
         cmd.add_argument("config", help="Path to Privacyflow TOML config")
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
     try:
         cfg = load_config(args.config)
         if args.command == "validate":
