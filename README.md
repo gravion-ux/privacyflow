@@ -1,5 +1,7 @@
 # Privacyflow v0.1.0
 
+[![CI](https://github.com/gravion-ux/privacyflow/actions/workflows/ci.yml/badge.svg)](https://github.com/gravion-ux/privacyflow/actions/workflows/ci.yml)
+
 Safety-first VPN profile validation and rotation planning. This is a **dry-run starter**, not a system VPN controller.
 
 ## Run
@@ -12,6 +14,41 @@ python -m privacyflow.cli rotation-plan config.example.toml
 ```
 
 For editable install: `python -m pip install -e .` then use `privacyflow validate config.example.toml`.
+
+## Worked example
+
+The bundled `config.example.toml` lists the two demo profiles in `profiles/` with a rotation interval of 1800 seconds. Validating it prints:
+
+```text
+$ python -m privacyflow.cli validate config.example.toml
+Valid configuration: 2 WireGuard profile(s); kill-switch requirement declared.
+Validation only: Privacyflow does not install or enforce a live kill switch in this release.
+```
+
+Asking for the rotation plan prints the dry-run steps as JSON (and `No network interfaces or routes were changed.` on stderr):
+
+```text
+$ python -m privacyflow.cli rotation-plan config.example.toml
+{
+  "mode": "DRY_RUN_ONLY",
+  "steps": [
+    {
+      "step": 1,
+      "profile": "provider-a.conf",
+      "interval_seconds": 1800,
+      "action": "would-switch-after-health-check"
+    },
+    {
+      "step": 2,
+      "profile": "provider-b.conf",
+      "interval_seconds": 1800,
+      "action": "would-switch-after-health-check"
+    }
+  ]
+}
+```
+
+Each step names a profile by its file stem — the bundled files are named `provider-a.conf.example` and `provider-b.conf.example`, so their stems keep the `.conf` part — and repeats the configured interval. Nothing is switched: every action is `would-switch-after-health-check`, in the order the profiles are listed in the config.
 
 ## Bring your own provider profile
 
