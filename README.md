@@ -1,8 +1,10 @@
+<p align="center"><img src="assets/banner.svg" alt="privacyflow banner" width="100%"/></p>
+
 # Privacyflow v0.1.0
 
-[![CI](https://github.com/gravion-ux/privacyflow/actions/workflows/ci.yml/badge.svg)](https://github.com/gravion-ux/privacyflow/actions/workflows/ci.yml)
+[![CI](https://github.com/gravion-ux/privacyflow/actions/workflows/ci.yml/badge.svg)](https://github.com/gravion-ux/privacyflow/actions/workflows/ci.yml) [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-Safety-first VPN profile validation and rotation planning. This is a **dry-run starter**, not a system VPN controller.
+**Safety-first VPN profile validation and rotation planning.**
 
 ## Run
 
